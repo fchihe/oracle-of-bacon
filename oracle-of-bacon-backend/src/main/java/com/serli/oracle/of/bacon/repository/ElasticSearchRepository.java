@@ -1,18 +1,20 @@
 package com.serli.oracle.of.bacon.repository;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import com.google.gson.internal.LinkedTreeMap;
+import com.serli.oracle.of.bacon.loader.elasticsearch.CompletionLoader;
+
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestClientFactory;
-import io.searchbox.client.JestResult;
 import io.searchbox.client.config.HttpClientConfig;
-import io.searchbox.core.Search;
-import io.searchbox.core.SearchResult;
-import io.searchbox.core.SearchResult.Hit;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import com.google.gson.JsonObject;
+import io.searchbox.core.Suggest;
+import io.searchbox.core.SuggestResult;
+import io.searchbox.core.SuggestResult.Suggestion;
 
 public class ElasticSearchRepository {
 
@@ -36,32 +38,41 @@ public class ElasticSearchRepository {
 	}
 
 	public List<String> getActorsSuggests(String searchQuery) {
-		String query = "{\n" +
-					   "	\"query\": {\n" +
-					   "    	\"match\" : {\n"+
-					   "       		\"name\" : {\n"+
-					   "       			\"query\" : \""+searchQuery+"\",\n"+
-					   "       			\"operator\" : \"and\"\n "+
-					   "        	}\n" +
-					   "        }\n" +
-					   "    }\n" +
+		String query = "{" +
+					   "	\""+CompletionLoader.ACTOR_TYPE+"\": {" +
+					   "    	\"text\" : \""+searchQuery+"\","+
+					   "    	\"completion\" : {"+
+					   "    		\"field\" : \""+CompletionLoader.SUGGESTION+"\""+
+					   "        }" +
+					   "    }" +
 					   "}";
-		Search search = new Search.Builder(query)
-				.addIndex("people")
-				.addType("actor")
+		Suggest search = new Suggest.Builder(query)
+				.addIndex(CompletionLoader.PEOPLE_INDEX)
 				.build();
 		try {
-			SearchResult result = jestClient.execute(search);
-			List<String> actorNames = result.getHits(JsonObject.class)
-										.stream()
-										.map(hit -> hit.source.get("name").getAsString())
-										.collect(Collectors.toList());
+			SuggestResult result = jestClient.execute(search);
+			List<Suggestion> suggestions = result.getSuggestions(CompletionLoader.ACTOR_TYPE);
+			List<String> actorNames = getSuggestedActorNames(suggestions);
 			return actorNames;
 		} catch (IOException e) {
 			System.out.println("Error while suggesting actor names. Error is : ");
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	private List<String> getSuggestedActorNames(List<Suggestion> suggestions) {
+		Iterator<Suggestion> suggestionIterator = suggestions.iterator();
+		List<String> actorNames = new ArrayList<String>();
+		// retreive the names of the actors from the suggestions
+		while (suggestionIterator.hasNext()) {
+			Suggestion entry = suggestionIterator.next(); // suggestion
+			for (Map<String, Object> option : entry.options) { // options of suggestion
+				LinkedTreeMap source = (LinkedTreeMap) option.get("_source");
+				actorNames.add((String) source.get("name"));  // name of the actor
+			}
+		}
+		return actorNames;
 	}
 
 

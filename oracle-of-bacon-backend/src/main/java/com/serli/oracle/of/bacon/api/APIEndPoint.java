@@ -5,10 +5,7 @@ import com.serli.oracle.of.bacon.repository.MongoDbRepository;
 import com.serli.oracle.of.bacon.repository.Neo4JRepository;
 import com.serli.oracle.of.bacon.repository.RedisRepository;
 import com.serli.oracle.of.bacon.repository.Neo4JRepository.Neo4jData;
-
 import net.codestory.http.annotations.Get;
-
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
