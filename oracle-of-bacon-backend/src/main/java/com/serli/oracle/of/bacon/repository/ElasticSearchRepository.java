@@ -47,7 +47,6 @@ public class ElasticSearchRepository {
 					   "        }\n" +
 					   "    }\n" +
 					   "}";
-
 		Search search = new Search.Builder(query)
 				.addIndex("people")
 				.addType("actor")
@@ -55,9 +54,9 @@ public class ElasticSearchRepository {
 		try {
 			SearchResult result = jestClient.execute(search);
 			List<String> actorNames = result.getHits(JsonObject.class)
-					.stream()
-					.map(hit -> hit.source.get("name").getAsString())
-					.collect(Collectors.toList());
+										.stream()
+										.map(hit -> hit.source.get("name").getAsString())
+										.collect(Collectors.toList());
 			return actorNames;
 		} catch (IOException e) {
 			System.out.println("Error while suggesting actor names. Error is : ");

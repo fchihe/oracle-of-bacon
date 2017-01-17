@@ -26,5 +26,6 @@ public class RedisRepository {
 	 */
 	public void addSearch(String actorName){
 		jedis.lpush("actorSearches", actorName);
+		jedis.ltrim("actorSearches", 0, 9);
 	}
 }
