@@ -26,7 +26,7 @@ public class CompletionLoader {
 		JestClient client = ElasticSearchRepository.createClient();
 		Builder bulkBuilder = new Bulk.Builder().defaultIndex("people").defaultType("actor");
 		try (BufferedReader bufferedReader = Files.newBufferedReader(Paths.get(inputFilePath))) {
-			bufferedReader.lines().skip(1)
+			bufferedReader.lines().skip(1) // skip headers of CSV
 			.forEach(line -> {
 				String actor = "{\"name\": "+line+"}";
 				bulkBuilder.addAction(new Index.Builder(actor).build());
