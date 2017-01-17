@@ -4,8 +4,15 @@ package com.serli.oracle.of.bacon.repository;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.types.Path;
 
+import com.google.common.collect.Iterables;
+
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -13,14 +20,41 @@ public class Neo4JRepository {
     private final Driver driver;
 
     public Neo4JRepository() {
-        driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "password"));
+        driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "neo4j"));
     }
 
-    public List<?> getConnectionsToKevinBacon(String actorName) {
+    public List<Neo4jData> getConnectionsToKevinBacon(String actorName) {
         Session session = driver.session();
-
-        // TODO implement Oracle of Bacon
-        return null;
+        Record record = session.run(
+        "MATCH path = shortestPath "
+        +"("
+        +"(kevin {name:'Bacon, Kevin (I)'})"
+        +"        -[PLAYED_IN*]-"
+        +"(actor {name:'"+ actorName +"'})"
+        +")"
+        +"return path;"
+        ).single();
+        Path p = record.get("path").asPath();
+        List<Neo4jData> result = new ArrayList<Neo4jData>();
+        
+        //For each neo4j node, create a GraphNode
+        p.nodes().forEach(node -> {
+	        long id = node.id();
+	        String name = node.containsKey("name") ? node.get("name").asString() : node.get("title").asString();
+	        String type = Iterables.get(node.labels(),0);
+	        result.add(new Neo4jData( new GraphNode(id, name , type)));
+    	});
+        
+        //For each neo4j relationship, create a graph edge
+        p.relationships().forEach(relationship -> {
+        	long id = relationship.id();
+        	long source = relationship.startNodeId();
+        	long target = relationship.endNodeId();
+        	String value = relationship.type();
+        	result.add(new Neo4jData(new GraphEdge(id, source, target, value)));
+        });
+        
+        return result;
     }
 
     private static abstract class GraphItem {
@@ -68,5 +102,12 @@ public class Neo4JRepository {
             this.target = target;
             this.value = value;
         }
+    }
+    public static class Neo4jData {
+        public final GraphItem data;
+
+        public Neo4jData(GraphItem data) {
+			this.data = data;
+		}
     }
 }
