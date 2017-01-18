@@ -70,7 +70,7 @@ public class CompletionLoader {
 	 * @return
 	 */
 	private static String createJsonActor(String line, ArrayList<String> suggestions) {
-		String actor = "{\"name\": "+line+", \"suggestions\" : { \"input\" : [";
+		String actor = "{\"name\": "+line+", \""+SUGGESTION+"\" : { \"input\" : [";
 		if(suggestions.size() > 0) {
 			for(String s: suggestions){
 				actor += "\""+ s +"\",";
